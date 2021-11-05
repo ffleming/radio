@@ -24,7 +24,7 @@ type DisplayPage struct {
 	Duration time.Duration
 }
 
-type RadioDisplay interface {
+type Display interface {
 	Write(string)
 	Tick([]DisplayPage)
 	Close()

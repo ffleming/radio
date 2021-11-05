@@ -28,16 +28,16 @@ type Station struct {
 	Info      string `json:"info" binding:"required"`
 }
 
-type RadioDial struct {
+type Dial struct {
 	Selected string   `json:"selected" binding:"required"`
 	Stations []string `json:"stations" binding:"required"`
 }
 
-type RadioDirectory struct {
+type Directory struct {
 	Stations []Station `json:"stations" binding:"required"`
 }
 
-func (rd *RadioDirectory) Lookup(callsign string) (Station, error) {
+func (rd *Directory) Lookup(callsign string) (Station, error) {
 	for _, st := range rd.Stations {
 		if st.Callsign == callsign {
 			return st, nil
@@ -46,24 +46,24 @@ func (rd *RadioDirectory) Lookup(callsign string) (Station, error) {
 	return Station{}, fmt.Errorf("Station with callsign %q not found", callsign)
 }
 
-type RadioState struct {
-	On          bool           `json:"on"`
-	TxFrequency string         `json:"frequency" binding:"required"`
-	Directory   RadioDirectory `json:"directory" binding:"required"`
-	Dial        RadioDial      `json:"dial" binding:"required"`
+type State struct {
+	On          bool      `json:"on"`
+	TxFrequency string    `json:"frequency" binding:"required"`
+	Directory   Directory `json:"directory" binding:"required"`
+	Dial        Dial      `json:"dial" binding:"required"`
 }
 
 type Radio struct {
-	State         *RadioState
-	display       RadioDisplay
+	State         *State
+	display       Display
 	filename      string
 	cmd           *exec.Cmd
 	mutex         sync.Mutex
 	cmdTerminated chan bool
 }
 
-func NewRadio(ctx context.Context, fn string, rd RadioDisplay) *Radio {
-	var rs RadioState
+func New(ctx context.Context, fn string) *Radio {
+	var rs State
 	jsonConf, err := ioutil.ReadFile(fn)
 	if err != nil {
 		log.Fatalf("Couldn't %s", err)
@@ -72,6 +72,13 @@ func NewRadio(ctx context.Context, fn string, rd RadioDisplay) *Radio {
 	err = json.Unmarshal(jsonConf, &rs)
 	if err != nil {
 		log.Fatalf("Couldn't parse JSON in %s: %s", jsonConf, err)
+	}
+
+	var rd Display
+	rd, err = NewOLEDDisplay()
+	if err != nil {
+		log.Error("Using null display")
+		rd = new(NullDisplay)
 	}
 
 	r := Radio{
@@ -89,6 +96,7 @@ func NewRadio(ctx context.Context, fn string, rd RadioDisplay) *Radio {
 				if r.broadcasting() {
 					r.turnOff()
 				}
+				r.display.Close()
 				return
 			default:
 				now := time.Now()
@@ -108,7 +116,7 @@ func NewRadio(ctx context.Context, fn string, rd RadioDisplay) *Radio {
 	return &r
 }
 
-func (r *Radio) Update(ctx context.Context, state *RadioState) {
+func (r *Radio) Update(ctx context.Context, state *State) {
 	r.mutex.Lock()
 	log.Debug("Update()")
 	mustHup := r.State.On && (r.State.Dial.Selected != state.Dial.Selected || r.State.TxFrequency != state.TxFrequency)
