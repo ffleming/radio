@@ -41,7 +41,7 @@ type OLEDDisplay struct {
 type NullDisplay struct{}
 
 func (nd *NullDisplay) Write(s string) {
-	log.Infof("Display write: %q", s)
+	log.Debugf("Display write: %q", s)
 }
 
 func (nd *NullDisplay) Close() {
@@ -96,13 +96,12 @@ func NewOLEDDisplay() (*OLEDDisplay, error) {
 }
 
 func (rd *OLEDDisplay) Write(s string) {
-	log.Infof("Display write: %q)", s)
+	log.Debugf("Display write: %q)", s)
 	arr := strings.SplitN(s, "\n", 2)
 	if len(arr) < 2 {
 		arr[1] = ""
 	}
 
-	// Draw on it.
 	img := image1bit.NewVerticalLSB(rd.device.Bounds())
 	dot := fixed.P(0, 16)
 	drawer := font.Drawer{
