@@ -219,19 +219,24 @@ func (r *Radio) turnOff() {
 }
 
 func (r *Radio) playCommand(ctx context.Context) *exec.Cmd {
+	var pipeline string
 	station, err := r.State.Directory.Lookup(r.State.Dial.Selected)
 	if err != nil {
 		log.Error(err)
 		return nil
 	}
 
-	pipeline := fmt.Sprintf(
-		"/usr/bin/sox -t mp3 %s -t wav - | /usr/bin/sudo /home/fsf/PiFmRds/src/pi_fm_rds -freq %s -audio -",
-		shellescape.Quote(station.URL),
-		shellescape.Quote(r.State.TxFrequency),
-	)
-	if !(ctx.Value("tx").(bool)) {
-		pipeline = "cat /proc/cpuinfo | /usr/bin/sudo tail -f"
+	if ctx.Value("tx").(bool) {
+		pipeline = fmt.Sprintf(
+			"/usr/bin/sox -t mp3 %s -t wav - | /usr/bin/sudo /home/fsf/PiFmRds/src/pi_fm_rds -freq %s -audio -",
+			shellescape.Quote(station.URL),
+			shellescape.Quote(r.State.TxFrequency),
+		)
+	} else {
+		pipeline = fmt.Sprintf(
+			"/usr/bin/play -t mp3 %s",
+			shellescape.Quote(station.URL),
+		)
 	}
 	cmd := exec.CommandContext(ctx, "bash", "-c", pipeline)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
