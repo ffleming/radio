@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"github.com/golang/freetype/truetype"
+	"github.com/periph/conn/i2c"
+	"github.com/periph/conn/i2c/i2creg"
+	"github.com/periph/devices/ssd1306"
+	"github.com/periph/devices/ssd1306/image1bit"
+	"github.com/periph/host"
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
-	"periph.io/x/periph/conn/i2c"
-	"periph.io/x/periph/conn/i2c/i2creg"
-	"periph.io/x/periph/devices/ssd1306"
-	"periph.io/x/periph/devices/ssd1306/image1bit"
-	"periph.io/x/periph/host"
 
 	log "github.com/sirupsen/logrus"
 )
