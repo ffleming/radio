@@ -179,7 +179,12 @@ func (r *Radio) turnOn(ctx context.Context) {
 	log.Infof("Beginning broadcast on %s FM", r.State.TxFrequency)
 
 	r.State.On = true
-	r.cmd = r.playCommand(ctx)
+	cmd, err := r.playCommand(ctx)
+	r.cmd = cmd
+	if err != nil {
+		log.Error(err)
+		return
+	}
 
 	// Ensure that cmd.Process is set before we start goroutine
 	if err := r.cmd.Start(); err != nil {
@@ -218,12 +223,11 @@ func (r *Radio) turnOff() {
 	r.cmd = nil
 }
 
-func (r *Radio) playCommand(ctx context.Context) *exec.Cmd {
+func (r *Radio) playCommand(ctx context.Context) (*exec.Cmd, error) {
 	var pipeline string
 	station, err := r.State.Directory.Lookup(r.State.Dial.Selected)
 	if err != nil {
-		log.Error(err)
-		return nil
+		return nil, err
 	}
 
 	if ctx.Value("tx").(bool) {
@@ -240,7 +244,7 @@ func (r *Radio) playCommand(ctx context.Context) *exec.Cmd {
 	}
 	cmd := exec.CommandContext(ctx, "bash", "-c", pipeline)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	return cmd
+	return cmd, nil
 }
 
 func (r *Radio) logStatus() {
